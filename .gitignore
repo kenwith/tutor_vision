@@ -1,0 +1,10 @@
+# Secrets - never commit
+secret.h
+
+# Build output
+agent
+
+# Stray / derived files
+*.orig
+*.png
+*.jpg
