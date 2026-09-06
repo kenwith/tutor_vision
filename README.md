@@ -1,6 +1,6 @@
 # tutor_vision
 
-A one-key HDMI screenshot tutor for the Dell E6400 (Core 2 Duo, 64-bit Linux).
+A one-key HDMI screenshot tutor for Linux. Developed on a Dell E6400 (Core 2 Duo, 64-bit Linux), but works on any Linux machine with a V4L2 MJPEG capture device.
 
 Run the agent, point an HDMI source at the USB capture dongle, press **Space**, and
 it grabs a fresh MJPEG frame, sends it (base64 as a data URL) to a vision model via
@@ -29,7 +29,7 @@ cp secret.h.example secret.h
 ```
 
 Produces a single static `agent` binary whose only dynamic dependency is `libc`
-(carries its own TLS/HTTPS via static curl + OpenSSL). Copy it to the E6400 and run:
+(carries its own TLS/HTTPS via static curl + OpenSSL). Copy it to your target machine and run:
 
 ```
 ./agent
