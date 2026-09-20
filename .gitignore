@@ -8,3 +8,6 @@ agent
 *.orig
 *.png
 *.jpg
+
+# Local captures
+/screenshots/

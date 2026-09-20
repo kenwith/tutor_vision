@@ -20,7 +20,9 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/poll.h>
+#include <sys/stat.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #define OPENROUTER_URL  "https://openrouter.ai/api/v1/chat/completions"
@@ -35,6 +37,7 @@
 #define FRESH_FRAMES    (REQ_BUFS + 2)
 #define MAX_FRAME_WAIT  5000
 #define FRAME_CAPACITY  (4 * 1024 * 1024)
+#define SHOTS_DIR       "screenshots"
 
 #define USER_PROMPT \
     "You are a visual question-answering tutor. Read all relevant text in " \
@@ -299,6 +302,39 @@ static void cleanup(void)
     curl_global_cleanup();
 }
 
+/* Write the captured JPEG to SHOTS_DIR with a timestamped name.
+   Returns 1 on success, 0 on failure. */
+static int save_frame(const unsigned char *frame, size_t frame_len)
+{
+    char path[256];
+    char stamp[32];
+    struct tm tm_now;
+    time_t now = time(NULL);
+    FILE *file;
+
+    if (mkdir(SHOTS_DIR, 0777) != 0 && errno != EEXIST)
+        return 0;
+
+    if (!localtime_r(&now, &tm_now))
+        return 0;
+    if (strftime(stamp, sizeof(stamp), "%Y%m%d-%H%M%S", &tm_now) == 0)
+        return 0;
+    if (snprintf(path, sizeof(path), "%s/capture-%s.jpg",
+                 SHOTS_DIR, stamp) >= (int)sizeof(path))
+        return 0;
+
+    file = fopen(path, "wb");
+    if (!file)
+        return 0;
+    if (fwrite(frame, 1, frame_len, file) != frame_len) {
+        fclose(file);
+        return 0;
+    }
+    fclose(file);
+    printf("Saved screenshot: %s (%zu bytes)\n", path, frame_len);
+    return 1;
+}
+
 static void on_signal(int signal_number)
 {
     ssize_t written;
@@ -521,7 +557,9 @@ int main(void)
             printf(" failed. Check that the HDMI source is active.\n");
             continue;
         }
-        printf(" %zu bytes.\nSending image to the model...\n", frame_len);
+        printf(" %zu bytes.\nSaving screenshot...\n", frame_len);
+        (void)save_frame(frame, frame_len);
+        printf("Sending image to the model...\n");
         (void)analyze_frame(frame, frame_len, api_key, model);
     }
 
